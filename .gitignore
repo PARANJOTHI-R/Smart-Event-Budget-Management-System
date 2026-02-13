@@ -34,5 +34,6 @@ backend/dist/
 *.sln
 *.sw?
 
+node_modules/express/pakage.json
 # Testing
 coverage/
