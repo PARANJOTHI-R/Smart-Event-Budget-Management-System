@@ -27,7 +27,7 @@ export default function Login() {
                 else
                     navigate('/organizer-panel');
             } else {
-                toast.error(data.message);
+                toast.error(data.message,{position:"top-center"});
             }
         } catch (error) {
             toast.error(error.message,{position:"top-center"});

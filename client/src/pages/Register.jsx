@@ -39,7 +39,7 @@ export default function Register() {
                         <option value="organizer" >Organizer</option>
                         <option value="admin" >Admin</option>
                     </select>
-                    <label>Name</label>
+                    <label>Username</label>
                     <input onChange={e => setName(e.target.value)} value={name} type="text" placeholder='Enter name' required />
 
                     <label>Email:</label>

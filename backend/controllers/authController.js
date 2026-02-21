@@ -10,6 +10,11 @@ export const register = async (req, res) => {
         return res.json({ success: false, message: 'All fields are required' });
     }
     try {
+        const nameTaken = await userModel.findOne({ name, role });
+        if (nameTaken) {
+            return res.json({ success: false, message: `Username '${name}' is already taken for role '${role}'` });
+        }
+
         const existingUser = await userModel.findOne({ email, role });
         if (existingUser) {
             return res.json({ success: false, message: `User already exists as an ${role}` });

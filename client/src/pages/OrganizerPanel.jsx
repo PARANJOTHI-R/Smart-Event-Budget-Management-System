@@ -15,13 +15,18 @@ export default function OrganizerPanel() {
     const [expenseFormData, setExpenseFormData] = useState({ category: "Venue", description: "", amount: "", date: "" });
 
 
-    const { isSidebarOpen } = useContext(AppContext);
+    const { isSidebarOpen, userData } = useContext(AppContext);
 
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const fetchEvents = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/all`);
+            const organizerName = userData?.name;
+            if (!organizerName) return;
+
+            const response = await axios.get(`${API_BASE_URL}/all`, {
+                params: { organizerName }
+            });
             setEvents(response.data.events);
             setLoading(false);
         }
@@ -32,8 +37,10 @@ export default function OrganizerPanel() {
     }
 
     useEffect(() => {
-        fetchEvents();
-    }, []);
+        if (userData?.name) {
+            fetchEvents();
+        }
+    }, [userData]);
 
     const handleCreateEvent = async (e) => {
         e.preventDefault();
@@ -79,9 +86,11 @@ export default function OrganizerPanel() {
                 setaddExpense(false);
                 setExpenseFormData({ category: "Venue", description: "", amount: "", date: "" });
                 toast.success("Expense added successfully!", { position: "top-center" });
+            }else{
+                toast.error(response.data.message, { position: "top-center" });
             }
         } catch (error) {
-            toast.error("Error adding expense: " + error.message, { position: "top-center" });
+            toast.error(error.response?.data?.message || error.message, { position: "top-center" });
         }
     };
     const totalBudget = events.reduce((sum, ev) => sum + ev.budget, 0);
@@ -161,29 +170,29 @@ export default function OrganizerPanel() {
                                 <div className="activeEvents">
                                     <h2>Active Events</h2>
                                     <table id="orgEventTable">
-                                        <thead>
-                                            <tr>
-                                                <th>Event Name</th>
-                                                <th>Date</th>
-                                                <th>Budget</th>
-                                                <th>Spent</th>
-                                                <th>Progress</th>
-                                                <th>Actions</th>
+                                        <thead  >
+                                            <tr >
+                                                <th style={{ fontSize: "20px" }} >Event Name</th>
+                                                <th style={{ fontSize: "20px" }} >Date</th>
+                                                <th style={{ fontSize: "20px" }} >Budget</th>
+                                                <th style={{ fontSize: "20px" }} >Spent</th>
+                                                <th style={{fontSize:"20px"}} > Status</th>
+                                                <th style={{ fontSize: "20px" }} >Progress</th>
+                                                <th style={{ fontSize: "20px" }}>Actions</th>
                                             </tr>
                                         </thead>
-                                        <tbody style={{ textAlign: "center" }} >
+                                        <tbody style={{ textAlign: "center ", fontSize: "18px" }} >
                                             {events.map((event) => (
                                                 <tr key={event._id}>
                                                     <td>
-                                                        <strong>{event.eventName}</strong><br />
-                                                        <small style={{ color: "gray", textAlign: "left" }}>
-
-                                                            {event.organizer?.name || event.organizer}
-                                                        </small>
+                                                        <h3>{event.eventName}</h3>
                                                     </td>
                                                     <td>{new Date(event.eventDate).toLocaleDateString()}</td>
                                                     <td>₹{event.budget.toLocaleString()}</td>
                                                     <td>₹{event.totalSpent.toLocaleString()}</td>
+                                                    <td><button className="manageBut" style={{
+                                                        backgroundColor: event.status === "upcoming" ? "#e0e7ff" : event.status === "ongoing" ? "#dcfce7" : "#fef3c7",
+                                                    }}>{event.status}</button></td>
                                                     <td>
                                                         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
                                                             {event.budget > 0 ? ((event.totalSpent / event.budget) * 100).toFixed(0) : 0}%
@@ -207,7 +216,7 @@ export default function OrganizerPanel() {
                                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                             <div>
                                                 <h2>{event.eventName}</h2>
-                                                <p>Budget: ₹{event.budget} || <strong>Organizer:</strong> {event.organizer?.name || event.organizer}</p>
+                                                <p>Budget: ₹{event.budget} || <strong>Organizer:</strong> {userData?.name || event.organizer}</p>
                                             </div>
                                             <button className="addExpBut" onClick={() => openExpenseModal(event._id)}>+Add Expense</button>
                                         </div>
@@ -286,14 +295,6 @@ export default function OrganizerPanel() {
                             value={formData.budget}
                             onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
                             required />
-
-                        <label>Organizer Name</label>
-                        <input type="text"
-                            placeholder="Ram"
-                            value={formData.organizer}
-                            onChange={(e) => setFormData({ ...formData, organizer: e.target.value })}
-                            required />
-
                         <button type="submit" className="modalSubmitBut">Create Event</button>
                     </form>
                 </div>

@@ -39,7 +39,13 @@ export const addExpenseToEvent = async (req, res) => {
         const { eventId } = req.params;
         const { category, description, amount, date } = req.body;
         const event = await eventModel.findById(eventId);
-        if (!event) return res.status(404).json({ message: "Event not found" });
+        if(amount>event.budget){
+            return res.json({ success: false, message: 'Expense amount exceeds event budget' });
+        }
+        if(amount<=0){
+            return res.status(400).json({ success: false, message: 'Expense amount must be greater than zero' });
+        }
+        if (!event) return res.json({ message: "Event not found" });
 
         event.expenses.push({
             title: description,
@@ -59,7 +65,18 @@ export const addExpenseToEvent = async (req, res) => {
 
 export const getAllEvents = async (req, res) => {
     try {
-        const events = await eventModel.find({}).populate('organizer', 'name');
+        const {organizerName}=req.query;
+        let filter = {};
+
+        if(organizerName){
+            const user=await userModel.findOne({name:organizerName});
+            if(!user){
+                return res.status(404).json({ success: false, message: `Organizer '${organizerName}' not found` });
+            }
+            filter={organizer:user._id};
+        }
+
+        const events = await eventModel.find(filter).populate('organizer', 'name');
         res.status(200).json({ success: true, events });
     } catch (e) {
         res.status(500).json({ success: false, message: e.message });
