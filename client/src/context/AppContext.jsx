@@ -12,6 +12,9 @@ export const AppContextProvider = (props) => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userData, setUserData] = useState(null);
 
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+
     const getUserData = async () => {
         try {
             const { data } = await axios.get(backendUrl + '/api/user/data');
@@ -51,7 +54,7 @@ export const AppContextProvider = (props) => {
         getAuthState();
     }, []);
 
-    const value = { backendUrl, isLoggedIn, setIsLoggedIn, userData, setUserData, getUserData, logout};
+    const value = { backendUrl, isLoggedIn, setIsLoggedIn, userData, setUserData, getUserData, logout, isSidebarOpen, setIsSidebarOpen };
 
     return <AppContext.Provider value={value}>{props.children}</AppContext.Provider>;
 }

@@ -2,6 +2,9 @@ import Nav from "../components/Nav";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify"
+import NotificationBar from "../components/NotificationBar";
+import { AppContext } from "../context/AppContext.jsx";
+import { useContext } from "react";
 export default function OrganizerPanel() {
     const API_BASE_URL = "http://localhost:4000/api/events";
     const [pageToogle, setPageToggle] = useState("dashboard");
@@ -11,6 +14,8 @@ export default function OrganizerPanel() {
     const [formData, setFormData] = useState({ name: "", date: "", budget: "", organizer: "" });
     const [expenseFormData, setExpenseFormData] = useState({ category: "Venue", description: "", amount: "", date: "" });
 
+
+    const { isSidebarOpen } = useContext(AppContext);
 
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -37,7 +42,7 @@ export default function OrganizerPanel() {
                 eventName: formData.name,
                 eventDate: formData.date,
                 budget: parseFloat(formData.budget),
-                organizerId: formData.organizer 
+                organizerId: formData.organizer
             };
 
             const response = await axios.post(`${API_BASE_URL}/create`, payload);
@@ -94,13 +99,20 @@ export default function OrganizerPanel() {
     }, 0);
     if (loading) {
         return <>
-            <div className="loading" > Loading Dashboard...</div>
+            <div className="loading" >
+                <img src="./src/assets/loading.png" />
+                <p>Loading Dashboard...</p>
+            </div>
         </>
     }
 
     return <>
         <Nav />
         <div className="organizerContainer">
+            <div className={`NotificationContainer ${isSidebarOpen ? "active" : ""}`}>
+                <NotificationBar />
+            </div>
+
             <div className="sidePanel">
                 <div className="sideContent">
                     <ul>
@@ -191,10 +203,10 @@ export default function OrganizerPanel() {
                             <h1>Event Expenses</h1>
                             <div className="allEventExpense">
                                 {events.map((event) => (
-                                    <div key={event._id} className="eventExpenseCard"> 
+                                    <div key={event._id} className="eventExpenseCard">
                                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                             <div>
-                                                <h2>{event.eventName}</h2> 
+                                                <h2>{event.eventName}</h2>
                                                 <p>Budget: ₹{event.budget} || <strong>Organizer:</strong> {event.organizer?.name || event.organizer}</p>
                                             </div>
                                             <button className="addExpBut" onClick={() => openExpenseModal(event._id)}>+Add Expense</button>
