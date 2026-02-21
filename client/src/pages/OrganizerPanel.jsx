@@ -1,61 +1,103 @@
 import Nav from "../components/Nav";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { toast } from "react-toastify"
 export default function OrganizerPanel() {
+    const API_BASE_URL = "http://localhost:4000/api/events";
     const [pageToogle, setPageToggle] = useState("dashboard");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [addExpense, setaddExpense] = useState(false);
     const [selectedEventId, setSelectedEventId] = useState(null);
     const [formData, setFormData] = useState({ name: "", date: "", budget: "", organizer: "" });
     const [expenseFormData, setExpenseFormData] = useState({ category: "Venue", description: "", amount: "", date: "" });
-    const [events, setEvents] = useState([
-        { id: 1, name: "Enthusia 2k26", organizer: "Paranjothi", date: "01/26/2026", budget: 17000, spent: 200, progress: 9 },
-        { id: 2, name: "Hacknovate 2k26", organizer: "Siva", date: "02/15/2026", budget: 5000, spent: 1000, progress: 17 },
-        { id: 2, name: "Swaram 2k26", organizer: "Nithesh", date: "20/15/2026", budget: 50000, spent: 10000, progress: 25 }
 
-    ]);
-    const [expenses, setExpenses] = useState([
-        { id: 101, eventId: 1, category: "Catering", description: "Snacks for Judges", date: "2026-01-26", amount: 200, status: "Pending" }
-    ]);
+
+    const [events, setEvents] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const fetchEvents = async () => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/all`);
+            setEvents(response.data.events);
+            setLoading(false);
+        }
+        catch (error) {
+            console.error("Error fetching events:", error);
+            setLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        fetchEvents();
+    }, []);
+
+    const handleCreateEvent = async (e) => {
+        e.preventDefault();
+        try {
+            const payload = {
+                eventName: formData.name,
+                eventDate: formData.date,
+                budget: parseFloat(formData.budget),
+                organizerId: formData.organizer 
+            };
+
+            const response = await axios.post(`${API_BASE_URL}/create`, payload);
+            if (response.data.success) {
+                fetchEvents();
+                setEvents([...events, response.data.event]);
+                setIsModalOpen(false);
+                setFormData({ name: "", date: "", budget: "", organizer: "" });
+                toast.success("Event created successfully!", { position: "top-center" });
+            }
+
+        }
+        catch (error) {
+            toast.error("Error creating event: " + error.message, { position: "top-center" });
+        }
+    }
+
     const NavtoEvent = () => {
         setPageToggle("my-events");
     }
+    const handleAddExpense = async (e) => {
+        e.preventDefault();
+        try {
+            const payload = {
+                category: expenseFormData.category,
+                description: expenseFormData.description,
+                amount: parseFloat(expenseFormData.amount),
+                date: expenseFormData.date
+            };
+
+            const response = await axios.post(`${API_BASE_URL}/${selectedEventId}/add-expense`, payload);
+            if (response.data.success) {
+                fetchEvents();
+                setaddExpense(false);
+                setExpenseFormData({ category: "Venue", description: "", amount: "", date: "" });
+                toast.success("Expense added successfully!", { position: "top-center" });
+            }
+        } catch (error) {
+            toast.error("Error adding expense: " + error.message, { position: "top-center" });
+        }
+    };
+    const totalBudget = events.reduce((sum, ev) => sum + ev.budget, 0);
+    const totalSpent = events.reduce((sum, ev) => sum + ev.totalSpent, 0);
+
     const openExpenseModal = (eventId) => {
         setSelectedEventId(eventId);
         setaddExpense(true);
     };
-    const handleCreateEvent = (e) => {
-        e.preventDefault();
+    const pendingAmount = events.reduce((sum, event) => {
+        const eventPending = event.expenses
+            .filter(exp => exp.approvalStatus === 'pending')
+            .reduce((s, exp) => s + exp.amount, 0);
+        return sum + eventPending;
+    }, 0);
+    if (loading) {
+        return <>
+            <div className="loading" > Loading Dashboard...</div>
+        </>
+    }
 
-        const newEvent = {
-            id: events.length + 1,
-            name: formData.name,
-            organizer: formData.organizer,
-            date: formData.date,
-            budget: parseFloat(formData.budget) || 0,
-            spent: 0,
-            progress: 0
-        };
-
-        setEvents([...events, newEvent]);
-        setIsModalOpen(false);
-        setFormData({ name: "", date: "", budget: "", organizer: "" });
-    };
-    const handleAddExpense = (e) => {
-        e.preventDefault();
-        const newExpense = {
-            id: Date.now(),
-            eventId: selectedEventId,
-            category: expenseFormData.category,
-            description: expenseFormData.description,
-            amount: parseFloat(expenseFormData.amount),
-            date: expenseFormData.date,
-            status: "Pending"
-        };
-
-        setExpenses([...expenses, newExpense]);
-        setaddExpense(false);
-        setExpenseFormData({ category: "Venue", description: "", amount: "", date: "" });
-    };
     return <>
         <Nav />
         <div className="organizerContainer">
@@ -87,20 +129,20 @@ export default function OrganizerPanel() {
                                 <div className="eventDashContent">
                                     <div className="eventdashCard">
                                         <h4>Total Budget</h4>
-                                        <h1>₹40000.00</h1>
+                                        <h1>₹{totalBudget.toLocaleString()}</h1>
                                         <h4 style={{ color: "rgb(54, 163, 42)", fontWeight: "normal" }} >Allocated across events</h4>
                                     </div>
                                     <div className="eventdashCard">
                                         <h4>Spent(Approved)</h4>
-                                        <h1>₹15000.00</h1>
+                                        <h1>₹{totalSpent.toLocaleString()}</h1>
                                         <div style={{ display: "flex", gap: "3px" }} >
-                                            <h4 style={{ width: "fit-content", color: "rgb(54, 163, 42)" }} >14.4% </h4>
+                                            <h4 style={{ width: "fit-content", color: "rgb(54, 163, 42)" }} >{(totalBudget > 0 ? ((totalSpent / totalBudget) * 100).toFixed(1) : 0)}% </h4>
                                             <h4 style={{ width: "fit-content", color: "black", fontWeight: "normal" }} >of total budget utilized</h4>
                                         </div>
                                     </div>
                                     <div className="eventdashCard">
                                         <h4>Pending Approval</h4>
-                                        <h1>₹5000.00</h1>
+                                        <h1>₹{pendingAmount.toLocaleString()}</h1>
                                         <h4 style={{ color: "black", fontWeight: "normal" }} >Awaiting Admin Review</h4>
                                     </div>
                                 </div>
@@ -119,18 +161,21 @@ export default function OrganizerPanel() {
                                         </thead>
                                         <tbody style={{ textAlign: "center" }} >
                                             {events.map((event) => (
-                                                <tr key={event.id}>
+                                                <tr key={event._id}>
                                                     <td>
-                                                        <strong>{event.name}</strong><br />
-                                                        <small style={{ color: "gray", textAlign: "left" }}>{event.organizer}</small>
+                                                        <strong>{event.eventName}</strong><br />
+                                                        <small style={{ color: "gray", textAlign: "left" }}>
+
+                                                            {event.organizer?.name || event.organizer}
+                                                        </small>
                                                     </td>
-                                                    <td>{event.date}</td>
+                                                    <td>{new Date(event.eventDate).toLocaleDateString()}</td>
                                                     <td>₹{event.budget.toLocaleString()}</td>
-                                                    <td>₹{event.spent.toLocaleString()}</td>
+                                                    <td>₹{event.totalSpent.toLocaleString()}</td>
                                                     <td>
                                                         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
-                                                            {event.progress}%
-                                                            <progress value={event.progress} max="100"></progress>
+                                                            {event.budget > 0 ? ((event.totalSpent / event.budget) * 100).toFixed(0) : 0}%
+                                                            <progress value={event.totalSpent} max={event.budget}></progress>
                                                         </div>
                                                     </td>
                                                     <td><button className="manageBut" onClick={NavtoEvent} >Manage</button></td>
@@ -146,15 +191,15 @@ export default function OrganizerPanel() {
                             <h1>Event Expenses</h1>
                             <div className="allEventExpense">
                                 {events.map((event) => (
-                                    <div key={event.id} className="eventExpenseCard">
+                                    <div key={event._id} className="eventExpenseCard"> 
                                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                             <div>
-                                                <h2>{event.name}</h2>
-                                                <p>Budget: ₹{event.budget} || <strong>Organizer:</strong> {event.organizer}</p>
+                                                <h2>{event.eventName}</h2> 
+                                                <p>Budget: ₹{event.budget} || <strong>Organizer:</strong> {event.organizer?.name || event.organizer}</p>
                                             </div>
-                                            <button className="addExpBut" onClick={() => openExpenseModal(event.id)}>+Add Expense</button>
+                                            <button className="addExpBut" onClick={() => openExpenseModal(event._id)}>+Add Expense</button>
                                         </div>
-                                        <table id="orgEventTable" style={{textAlign:"center"}}>
+                                        <table id="orgEventTable" style={{ textAlign: "center" }}>
                                             <thead>
                                                 <tr>
                                                     <th>Category</th>
@@ -165,12 +210,13 @@ export default function OrganizerPanel() {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {expenses.filter(ex => ex.eventId === event.id).length > 0 ? (
-                                                    expenses.filter(ex => ex.eventId === event.id).map(expense => (
-                                                        <tr key={expense.id}>
+
+                                                {event.expenses && event.expenses.length > 0 ? (
+                                                    event.expenses.map(expense => (
+                                                        <tr key={expense._id}>
                                                             <td>{expense.category}</td>
                                                             <td>{expense.description}</td>
-                                                            <td>{expense.date}</td>
+                                                            <td>{new Date(expense.date).toLocaleDateString()}</td>
                                                             <td>₹{expense.amount.toLocaleString()}</td>
                                                             <td>
                                                                 <span style={{
@@ -178,10 +224,11 @@ export default function OrganizerPanel() {
                                                                     borderRadius: "4px",
                                                                     fontSize: "12px",
                                                                     fontWeight: "bold",
-                                                                    backgroundColor: expense.status === "Approved" ? "#dcfce7" : "#fef3c7",
-                                                                    color: expense.status === "Approved" ? "#166534" : "#92400e"
+
+                                                                    backgroundColor: expense.approvalStatus === "approved" ? "#dcfce7" : "#fef3c7",
+                                                                    color: expense.approvalStatus === "approved" ? "#166534" : "#92400e"
                                                                 }}>
-                                                                    {expense.status}
+                                                                    {expense.approvalStatus}
                                                                 </span>
                                                             </td>
                                                         </tr>
@@ -243,7 +290,7 @@ export default function OrganizerPanel() {
 
 
 
-        
+
 
         {addExpense &&
             <>
@@ -263,11 +310,11 @@ export default function OrganizerPanel() {
                                     borderRadius: "8px",
                                     fontSize: "16px"
                                 }}>
-                                <option value="Venue booking">Venue</option>
-                                <option value="Catering">Catering</option>
-                                <option value="Decorations">Decorations</option>
-                                <option value="Refreshment">Refreshment</option>
-                                <option value="Others">Others</option>
+                                <option value="Food">Food</option>
+                                <option value="Venue">Venue</option>
+                                <option value="Decoration">Decoration</option>
+                                <option value="Marketing">Marketing</option>
+                                <option value="Other">Other</option>
                             </select>
                             <label>Description</label>
                             <input type="text"

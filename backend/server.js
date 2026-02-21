@@ -8,6 +8,8 @@ import userRouter from './routes/userRoutes.js';
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+import eventRouter from './routes/eventRoutes.js';
+
 connectDb();
 
 app.use(express.json());
@@ -19,6 +21,7 @@ app.get('/',(req,res)=>{
     res.send('Hello from backend server side');
 });
 
+app.use('/api/events',eventRouter);
 app.use('/api/auth',authRouter);
 app.use('/api/user',userRouter);
 
