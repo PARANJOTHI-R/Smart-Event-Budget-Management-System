@@ -101,6 +101,7 @@ export default function OrganizerPanel() {
             if (response.data.success) {
                 fetchEvents();
                 setaddExpense(false);
+                setIsEditing(false);
                 setExpenseFormData({ category: "Venue", description: "", amount: "", date: "" });
                 toast.success(isEditing ? "Expense updated!" : "Expense added!", { position: "top-center" });
             } else {
