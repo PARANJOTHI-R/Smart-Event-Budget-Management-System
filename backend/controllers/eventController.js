@@ -40,8 +40,9 @@ export const addExpenseToEvent = async (req, res) => {
         const { category, description, amount, date } = req.body;
         const event = await eventModel.findById(eventId);
         if (!event) return res.json({ message: "Event not found" });
-        if (amount > event.budget) {
-            return res.json({ success: false, message: 'Expense amount exceeds event budget' });
+        const currentAllocated = event.expenses.reduce((sum, exp) => sum + exp.amount, 0);
+        if (amount > event.budget || amount + currentAllocated > event.budget) {
+            return res.status(400).json({ success: false, message: 'Expense amount exceeds event budget' });
         }
         if (amount <= 0) {
             return res.status(400).json({ success: false, message: 'Expense amount must be greater than zero' });
@@ -98,11 +99,11 @@ export const deleteExpense = async (req, res) => {
         if (!event) {
             return res.status(404).json({ success: false, message: 'Event not found' });
         }
-        const expense=event.expenses.id(expenseId); 
+        const expense = event.expenses.id(expenseId);
         if (!expense) {
             return res.status(404).json({ success: false, message: 'Expense not found' });
         }
-        if(expense.approvalStatus==='approved'){
+        if (expense.approvalStatus === 'approved') {
             return res.status(400).json({ success: false, message: 'Approved expenses cannot be deleted. Please contact Admin' });
         }
         event.expenses.pull(expenseId);
@@ -124,7 +125,19 @@ export const updateExpense = async (req, res) => {
 
         const expense = event.expenses.id(expenseId);
         if (!expense) return res.status(404).json({ success: false, message: 'Expense not found' });
-
+        const otherExpensesTotal = event.expenses.reduce((sum, exp) => {
+            if (exp._id.toString() === expenseId) return sum;
+            return sum + exp.amount;
+        }, 0);
+        if (amount + otherExpensesTotal > event.budget) {
+            return res.status(400).json({
+                success: false,
+                message: `Update failed. This would bring total costs to ₹${(amount + otherExpensesTotal).toLocaleString()}, exceeding the ₹${event.budget.toLocaleString()} budget.`
+            });
+        }
+        if (amount <= 0) {
+            return res.status(400).json({ success: false, message: 'Expense amount must be greater than zero' });
+        }
         if (expense.approvalStatus === 'approved') {
             return res.status(400).json({ success: false, message: 'Approved expenses cannot be edited.' });
         }

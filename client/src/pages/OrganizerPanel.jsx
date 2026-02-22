@@ -54,6 +54,12 @@ export default function OrganizerPanel() {
         }
     }, [userData]);
 
+    const pendingAmount = events.reduce((sum, event) => {
+        const eventPending = event.expenses
+            .filter(exp => exp.approvalStatus === 'pending')
+            .reduce((s, exp) => s + exp.amount, 0);
+        return sum + eventPending;
+    }, 0);
     const handleCreateEvent = async (e) => {
         e.preventDefault();
         try {
@@ -118,12 +124,7 @@ export default function OrganizerPanel() {
         setSelectedEventId(eventId);
         setaddExpense(true);
     };
-    const pendingAmount = events.reduce((sum, event) => {
-        const eventPending = event.expenses
-            .filter(exp => exp.approvalStatus === 'pending')
-            .reduce((s, exp) => s + exp.amount, 0);
-        return sum + eventPending;
-    }, 0);
+
     if (loading) {
         return <>
             <div className="loading" >
@@ -133,7 +134,7 @@ export default function OrganizerPanel() {
         </>
     }
 
-    const handleDeleteExpense= async (eventId, expenseId) => {
+    const handleDeleteExpense = async (eventId, expenseId) => {
         try {
             const response = await axios.delete(`${API_BASE_URL}/${eventId}/expenses/${expenseId}`);
             if (response?.data?.success) {
@@ -213,44 +214,46 @@ export default function OrganizerPanel() {
                                 </div>
                                 <div className="activeEvents">
                                     <h2>Active Events</h2>
-                                    <div className="eventScrollDash">
-                                        <table id="orgEventTable">
-                                            <thead  >
-                                                <tr >
-                                                    <th style={{ fontSize: "20px" }} >Event Name</th>
-                                                    <th style={{ fontSize: "20px" }} >Date</th>
-                                                    <th style={{ fontSize: "20px" }} >Budget</th>
-                                                    <th style={{ fontSize: "20px" }} >Spent</th>
-                                                    <th style={{ fontSize: "20px" }} > Status</th>
-                                                    <th style={{ fontSize: "20px" }} >Progress</th>
-                                                    <th style={{ fontSize: "20px" }}>Actions</th>
-                                                </tr>
-                                            </thead>
-
-                                            <tbody style={{ textAlign: "center ", fontSize: "18px" }} >
-                                                {events.map((event) => (
-                                                    <tr key={event._id}>
-                                                        <td>
-                                                            <h3>{event.eventName}</h3>
-                                                        </td>
-                                                        <td>{new Date(event.eventDate).toLocaleDateString()}</td>
-                                                        <td>₹{event.budget.toLocaleString()}</td>
-                                                        <td>₹{event.totalSpent.toLocaleString()}</td>
-                                                        <td><button className="manageBut" style={{
-                                                            backgroundColor: event.status === "upcoming" ? "#e0e7ff" : event.status === "ongoing" ? "#dcfce7" : "#fef3c7",
-                                                        }}>{event.status}</button></td>
-                                                        <td>
-                                                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
-                                                                {event.budget > 0 ? ((event.totalSpent / event.budget) * 100).toFixed(0) : 0}%
-                                                                <progress value={event.totalSpent} max={event.budget}></progress>
-                                                            </div>
-                                                        </td>
-                                                        <td><button className="manageBut" onClick={NavtoEvent} >Manage</button></td>
+                                    {events.length === 0 ? <p style={{ textAlign: "center", color: "balck", marginTop: "10%", fontSize: "20px" }} >No events created yet. Click on "New Event" to get started!</p> :
+                                        <div className="eventScrollDash">
+                                            <table id="orgEventTable">
+                                                <thead  >
+                                                    <tr >
+                                                        <th style={{ fontSize: "20px" }} >Event Name</th>
+                                                        <th style={{ fontSize: "20px" }} >Date</th>
+                                                        <th style={{ fontSize: "20px" }} >Budget</th>
+                                                        <th style={{ fontSize: "20px" }} >Spent</th>
+                                                        <th style={{ fontSize: "20px" }} > Status</th>
+                                                        <th style={{ fontSize: "20px" }} >Progress</th>
+                                                        <th style={{ fontSize: "20px" }}>Actions</th>
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                                </thead>
+
+                                                <tbody style={{ textAlign: "center ", fontSize: "18px" }} >
+                                                    {events.map((event) => (
+                                                        <tr key={event._id}>
+                                                            <td>
+                                                                <h3>{event.eventName}</h3>
+                                                            </td>
+                                                            <td>{new Date(event.eventDate).toLocaleDateString()}</td>
+                                                            <td>₹{event.budget.toLocaleString()}</td>
+                                                            <td>₹{event.totalSpent.toLocaleString()}</td>
+                                                            <td><button className="manageBut" style={{
+                                                                backgroundColor: event.status === "upcoming" ? "#e0e7ff" : event.status === "ongoing" ? "#dcfce7" : "#fef3c7",
+                                                            }}>{event.status}</button></td>
+                                                            <td>
+                                                                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
+                                                                    {event.budget > 0 ? ((event.totalSpent / event.budget) * 100).toFixed(0) : 0}%
+                                                                    <progress value={event.totalSpent} max={event.budget}></progress>
+                                                                </div>
+                                                            </td>
+                                                            <td><button className="manageBut" onClick={NavtoEvent} >Manage</button></td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
                                 </div>
                             </div>
                         </>}
@@ -259,80 +262,84 @@ export default function OrganizerPanel() {
                             <h1>Event Expenses</h1>
                             <div className="allEventExpense">
                                 <div className="eventScroll">
-                                    {events.map((event) => (
-                                        <div key={event._id} className="eventExpenseCard">
-                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                                <div>
-                                                    <h2>{event.eventName}</h2><br />
-                                                    <p>Budget: ₹{event.budget} || <strong>Organizer:</strong> {userData?.name || event.organizer}</p>
-                                                </div>
-                                                <button className="addExpBut" onClick={() => openExpenseModal(event._id)}>+Add Expense</button>
-                                            </div>
-                                            <table id="orgEventTable" style={{ textAlign: "center", marginTop: "15px" }}>
-                                                <thead>
-                                                    <tr>
-                                                        <th>Category</th>
-                                                        <th>Description</th>
-                                                        <th>Date</th>
-                                                        <th>Amount</th>
-                                                        <th>Status</th>
-                                                        <th>Action</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-
-                                                    {event.expenses && event.expenses.length > 0 ? (
-                                                        event.expenses.map(expense => (
-                                                            <tr key={expense._id}>
-                                                                <td>{expense.category}</td>
-                                                                <td>{expense.description}</td>
-                                                                <td>{new Date(expense.date).toLocaleDateString()}</td>
-                                                                <td>₹{expense.amount.toLocaleString()}</td>
-                                                                <td>
-                                                                    <span style={{
-                                                                        padding: "4px 8px",
-                                                                        borderRadius: "4px",
-                                                                        fontSize: "12px",
-                                                                        fontWeight: "bold",
-
-                                                                        backgroundColor: expense.approvalStatus === "approved" ? "#dcfce7" : "#fef3c7",
-                                                                        color: expense.approvalStatus === "approved" ? "#166534" : "#92400e"
-                                                                    }}>
-                                                                        {expense.approvalStatus}
-                                                                    </span>
-                                                                </td>
-                                                                <td>
-                                                                    <button className="ExpenceAction"
-                                                                        disabled={expense.approvalStatus === "approved"}
-                                                                        onClick={() => {
-                                                                            setCurrentEventId(event._id);
-                                                                            setCurrentExpenseId(expense._id);
-                                                                            setdelCnfmModel(true);
-                                                                        }
-                                                                        } style={{
-                                                                            backgroundColor: "rgb(250, 69, 69)"
-
-                                                                        }}
-
-                                                                    >Delete</button>
-                                                                    <button className="ExpenceAction"
-                                                                        disabled={expense.approvalStatus === "approved"}
-                                                                        style={{ backgroundColor: "rgb(96, 157, 242)" }}
-
-                                                                        onClick={() => openEditModal(event, expense)}
-
-                                                                    >Edit</button>
-
-                                                                </td>
+                                    {events.length === 0 ? (<p style={{ textAlign: "center", color: "black", marginTop: "10%", fontSize: "20px" }} >No events created yet. Click on "New Event" to get started!</p>) :
+                                        (
+                                            events.map((event) => (
+                                                <div key={event._id} className="eventExpenseCard">
+                                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                                        <div>
+                                                            <h2>{event.eventName}</h2><br />
+                                                            <p>Budget: ₹{event.budget} || <strong>Organizer:</strong> {userData?.name || event.organizer}</p>
+                                                        </div>
+                                                        <button className="addExpBut" onClick={() => openExpenseModal(event._id)}>+Add Expense</button>
+                                                    </div>
+                                                    <table id="orgEventTable" style={{ textAlign: "center", marginTop: "15px" }}>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Category</th>
+                                                                <th>Description</th>
+                                                                <th>Date</th>
+                                                                <th>Amount</th>
+                                                                <th>Status</th>
+                                                                <th>Action</th>
                                                             </tr>
-                                                        ))
-                                                    ) : (
-                                                        <tr><td colSpan="5" style={{ color: "gray" }}>No expenses added yet.</td></tr>
-                                                    )}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    ))}
+                                                        </thead>
+                                                        <tbody>
+
+                                                            {event.expenses && event.expenses.length > 0 ? (
+                                                                event.expenses.map(expense => (
+                                                                    <tr key={expense._id}>
+                                                                        <td>{expense.category}</td>
+                                                                        <td>{expense.description}</td>
+                                                                        <td>{new Date(expense.date).toLocaleDateString()}</td>
+                                                                        <td>₹{expense.amount.toLocaleString()}</td>
+                                                                        <td>
+                                                                            <span style={{
+                                                                                padding: "4px 8px",
+                                                                                borderRadius: "4px",
+                                                                                fontSize: "12px",
+                                                                                fontWeight: "bold",
+
+                                                                                backgroundColor: expense.approvalStatus === "approved" ? "#dcfce7" : "#fef3c7",
+                                                                                color: expense.approvalStatus === "approved" ? "#166534" : "#92400e"
+                                                                            }}>
+                                                                                {expense.approvalStatus}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td>
+                                                                            <button className="ExpenceAction"
+                                                                                disabled={expense.approvalStatus === "approved"}
+                                                                                onClick={() => {
+                                                                                    setCurrentEventId(event._id);
+                                                                                    setCurrentExpenseId(expense._id);
+                                                                                    setdelCnfmModel(true);
+                                                                                }
+                                                                                } style={{
+                                                                                    backgroundColor: "rgb(250, 69, 69)"
+
+                                                                                }}
+
+                                                                            >Delete</button>
+                                                                            <button className="ExpenceAction"
+                                                                                disabled={expense.approvalStatus === "approved"}
+                                                                                style={{ backgroundColor: "rgb(96, 157, 242)" }}
+
+                                                                                onClick={() => openEditModal(event, expense)}
+
+                                                                            >Edit</button>
+
+                                                                        </td>
+                                                                    </tr>
+                                                                ))
+                                                            ) : (
+                                                                <tr><td colSpan="5" style={{ color: "gray" }}>No expenses added yet.</td></tr>
+                                                            )}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            ))
+                                        )
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -411,7 +418,11 @@ export default function OrganizerPanel() {
                     <div className="modalContent">
                         <div className="modalHeader">
                             <h2>Add Expense</h2>
-                            <button className="closeModal" onClick={() => setaddExpense(false)}>&times;</button>
+                            <button className="closeModal" onClick={() => {
+                                setIsEditing(false);
+                                setExpenseFormData({ category: "Venue", description: "", amount: "", date: "" });
+                                setaddExpense(false)
+                            }}>&times;</button>
                         </div>
                         <form className="modalForm" onSubmit={handleAddExpenseSubmit} >
                             <label>Event Category</label>
