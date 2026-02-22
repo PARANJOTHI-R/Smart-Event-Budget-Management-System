@@ -12,33 +12,47 @@ export default function Register() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [role, setRole] = useState('organizer');
+    const [key, setKey] = useState('');
 
     const onSubmitHandler = async (e) => {
         e.preventDefault();
         try {
-            const { data } = await axios.post(backendUrl + '/api/auth/register', { name, email, password, role });
+            let  response ;
+            if (role === 'admin') {
+                 response  = await axios.post(backendUrl + '/api/auth/register', { name, email, password, role, key });
+            }
+            else {
+                 response  = await axios.post(backendUrl + '/api/auth/register', { name, email, password, role });
+            }
+            const {data}=response;
             if (data.success) {
-                toast.success("Account created! Please Login.",{position:"top-center"});
+                toast.success("Account created! Please Login.", { position: "top-center" });
                 navigate('/login');
             } else {
-                toast.error(data.message,{position:"top-center"});
+                toast.error(data.message, { position: "top-center" });
             }
         } catch (error) {
-            toast.error(error.message,{position:"top-center"});
+            toast.error(error.message, { position: "top-center" });
         }
     };
 
     return (
         <>
-            <Nav/>
+            <Nav />
             <div className="loginContainer">
                 <h1>Register</h1>
                 <form onSubmit={onSubmitHandler}>
                     <label  >Role:</label>
-                    <select  className='roleSelect' value={role} onChange={e => setRole(e.target.value)} >
+                    <select className='roleSelect' value={role} onChange={e => setRole(e.target.value)} >
                         <option value="organizer" >Organizer</option>
                         <option value="admin" >Admin</option>
                     </select>
+                    {role === 'admin' &&
+                        <>
+                            <label>Admin Key:</label>
+                            <input onChange={e => setKey(e.target.value)} value={key} type="password" placeholder='Enter Admin Key'   required />
+                        </>
+                    }
                     <label>Username</label>
                     <input onChange={e => setName(e.target.value)} value={name} type="text" placeholder='Enter name' required />
 

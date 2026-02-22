@@ -3,11 +3,9 @@
   padding: 0;
   box-sizing: border-box;
 }
-
 body{
   overflow: hidden;
 }
-
 .navContainer {
   display: flex;
   flex-direction: row;
@@ -87,7 +85,7 @@ body{
   border-radius: 20px;
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: 55%;
   transform: translate(-50%, -50%);
 }
 
@@ -289,7 +287,6 @@ body{
   width: 100%;
   border-collapse: collapse;
   box-shadow: rgba(0, 0, 0, 0.2) 10px 2px 20px -2px;
-  margin: 20px 0px;
 }
 
 #orgEventTable th,
@@ -312,7 +309,9 @@ body{
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  /* background-color: rgba(0, 0, 0, 0.5); */
+  background: transparent;
+  backdrop-filter: blur(10px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -397,12 +396,39 @@ body{
   gap: 30px;
 }
 
+.eventScroll{
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  height: 79vh;
+  overflow-y: scroll;
+  scrollbar-width: none;
+  padding: 20px 30px 25px 35px;
+  border-radius: 10px;
+}
+.eventScrollDash{
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  box-shadow: rgba(0, 0, 0, 0.2) 10px 2px 20px -2px;
+  padding: 0PX;
+  height: 48vh;
+  overflow-y: scroll;
+  scrollbar-width: none;
+  margin: 20px 0px;
+  border-radius: 10px;
+  /* background-color: red; */
+}
+
+
+
 .eventExpenseCard {
   background-color: white;
   padding: 25px;
   border-radius: 15px;
   box-shadow: rgba(0, 0, 0, 0.2) 10px 2px 20px -2px;
-  overflow: auto;
+ 
 }
 
 .addExpBut {
@@ -499,4 +525,40 @@ body{
   border-radius: 10px;
   box-shadow: rgba(0, 0, 0, 0.2) 10px 2px 20px -2px;
   display: flex;
+}
+
+.ExpenceAction {
+  padding: 7px 18px;
+  font-size: 15px;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  /* margin-right: 5px; */
+  margin: 5px;
+}
+.delcnfm{
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: white;
+ width: 100%;
+  height: 100%;
+  background: transparent;
+  backdrop-filter: blur(10px);
+}
+
+.msgBox{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  padding: 25px 25px;
+  border-radius: 15px;
+  box-shadow: rgba(0, 0, 0, 0.2) 10px 2px 20px -2px;
+  display: flex;
+  flex-direction: column;
+  font-size: 20px;
+  gap: 20px;
 }

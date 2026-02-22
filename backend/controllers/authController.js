@@ -3,13 +3,22 @@ import jwt from 'jsonwebtoken';
 import userModel from '../models/userModel.js';
 import mongoose from 'mongoose';
 import transpoter from '../config/nodeMailer.js';
+import dotenv from 'dotenv';
 
+dotenv.config();
 export const register = async (req, res) => {
     const { name, email, password, role } = req.body;
     if (!name || !email || !password) {
         return res.json({ success: false, message: 'All fields are required' });
     }
+
     try {
+        if (role === 'admin') {
+            const { key } = req.body;
+            if (key !== process.env.ADMIN_KEY) {
+                return res.json({ success: false, message: 'Invalid Admin Key Unauthorized Access' });
+            }
+        }
         const nameTaken = await userModel.findOne({ name, role });
         if (nameTaken) {
             return res.json({ success: false, message: `Username '${name}' is already taken for role '${role}'` });

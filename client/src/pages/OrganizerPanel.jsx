@@ -14,6 +14,7 @@ export default function OrganizerPanel() {
     const [formData, setFormData] = useState({ name: "", date: "", budget: "", organizer: "" });
     const [expenseFormData, setExpenseFormData] = useState({ category: "Venue", description: "", amount: "", date: "" });
 
+    const [delCnfmModel, setdelCnfmModel] = useState(false);
 
     const { isSidebarOpen, userData } = useContext(AppContext);
 
@@ -22,11 +23,18 @@ export default function OrganizerPanel() {
     const fetchEvents = async () => {
         try {
             const organizerName = userData?.name;
+            const userRole = userData?.role;
             if (!organizerName) return;
-
-            const response = await axios.get(`${API_BASE_URL}/all`, {
-                params: { organizerName }
-            });
+            let response;
+            if (userRole === 'organizer') {
+                response = await axios.get(`${API_BASE_URL}/all`, {
+                    params: { organizerName }
+                });
+            } else {
+                response = await axios.get(`${API_BASE_URL}/all`, {
+                    params: { organizerName }
+                });
+            }
             setEvents(response.data.events);
             setLoading(false);
         }
@@ -49,7 +57,7 @@ export default function OrganizerPanel() {
                 eventName: formData.name,
                 eventDate: formData.date,
                 budget: parseFloat(formData.budget),
-                organizerId: formData.organizer
+                organizerId: userData?.name
             };
 
             const response = await axios.post(`${API_BASE_URL}/create`, payload);
@@ -86,7 +94,7 @@ export default function OrganizerPanel() {
                 setaddExpense(false);
                 setExpenseFormData({ category: "Venue", description: "", amount: "", date: "" });
                 toast.success("Expense added successfully!", { position: "top-center" });
-            }else{
+            } else {
                 toast.error(response.data.message, { position: "top-center" });
             }
         } catch (error) {
@@ -169,41 +177,44 @@ export default function OrganizerPanel() {
                                 </div>
                                 <div className="activeEvents">
                                     <h2>Active Events</h2>
-                                    <table id="orgEventTable">
-                                        <thead  >
-                                            <tr >
-                                                <th style={{ fontSize: "20px" }} >Event Name</th>
-                                                <th style={{ fontSize: "20px" }} >Date</th>
-                                                <th style={{ fontSize: "20px" }} >Budget</th>
-                                                <th style={{ fontSize: "20px" }} >Spent</th>
-                                                <th style={{fontSize:"20px"}} > Status</th>
-                                                <th style={{ fontSize: "20px" }} >Progress</th>
-                                                <th style={{ fontSize: "20px" }}>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody style={{ textAlign: "center ", fontSize: "18px" }} >
-                                            {events.map((event) => (
-                                                <tr key={event._id}>
-                                                    <td>
-                                                        <h3>{event.eventName}</h3>
-                                                    </td>
-                                                    <td>{new Date(event.eventDate).toLocaleDateString()}</td>
-                                                    <td>₹{event.budget.toLocaleString()}</td>
-                                                    <td>₹{event.totalSpent.toLocaleString()}</td>
-                                                    <td><button className="manageBut" style={{
-                                                        backgroundColor: event.status === "upcoming" ? "#e0e7ff" : event.status === "ongoing" ? "#dcfce7" : "#fef3c7",
-                                                    }}>{event.status}</button></td>
-                                                    <td>
-                                                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
-                                                            {event.budget > 0 ? ((event.totalSpent / event.budget) * 100).toFixed(0) : 0}%
-                                                            <progress value={event.totalSpent} max={event.budget}></progress>
-                                                        </div>
-                                                    </td>
-                                                    <td><button className="manageBut" onClick={NavtoEvent} >Manage</button></td>
+                                    <div className="eventScrollDash">
+                                        <table id="orgEventTable">
+                                            <thead  >
+                                                <tr >
+                                                    <th style={{ fontSize: "20px" }} >Event Name</th>
+                                                    <th style={{ fontSize: "20px" }} >Date</th>
+                                                    <th style={{ fontSize: "20px" }} >Budget</th>
+                                                    <th style={{ fontSize: "20px" }} >Spent</th>
+                                                    <th style={{ fontSize: "20px" }} > Status</th>
+                                                    <th style={{ fontSize: "20px" }} >Progress</th>
+                                                    <th style={{ fontSize: "20px" }}>Actions</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+
+                                            <tbody style={{ textAlign: "center ", fontSize: "18px" }} >
+                                                {events.map((event) => (
+                                                    <tr key={event._id}>
+                                                        <td>
+                                                            <h3>{event.eventName}</h3>
+                                                        </td>
+                                                        <td>{new Date(event.eventDate).toLocaleDateString()}</td>
+                                                        <td>₹{event.budget.toLocaleString()}</td>
+                                                        <td>₹{event.totalSpent.toLocaleString()}</td>
+                                                        <td><button className="manageBut" style={{
+                                                            backgroundColor: event.status === "upcoming" ? "#e0e7ff" : event.status === "ongoing" ? "#dcfce7" : "#fef3c7",
+                                                        }}>{event.status}</button></td>
+                                                        <td>
+                                                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
+                                                                {event.budget > 0 ? ((event.totalSpent / event.budget) * 100).toFixed(0) : 0}%
+                                                                <progress value={event.totalSpent} max={event.budget}></progress>
+                                                            </div>
+                                                        </td>
+                                                        <td><button className="manageBut" onClick={NavtoEvent} >Manage</button></td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </>}
@@ -211,56 +222,68 @@ export default function OrganizerPanel() {
                         <div className="myEventsPage">
                             <h1>Event Expenses</h1>
                             <div className="allEventExpense">
-                                {events.map((event) => (
-                                    <div key={event._id} className="eventExpenseCard">
-                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                            <div>
-                                                <h2>{event.eventName}</h2>
-                                                <p>Budget: ₹{event.budget} || <strong>Organizer:</strong> {userData?.name || event.organizer}</p>
+                                <div className="eventScroll">
+                                    {events.map((event) => (
+                                        <div key={event._id} className="eventExpenseCard">
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                                <div>
+                                                    <h2>{event.eventName}</h2><br/>
+                                                    <p>Budget: ₹{event.budget} || <strong>Organizer:</strong> {userData?.name || event.organizer}</p>
+                                                </div>
+                                                <button className="addExpBut" onClick={() => openExpenseModal(event._id)}>+Add Expense</button>
                                             </div>
-                                            <button className="addExpBut" onClick={() => openExpenseModal(event._id)}>+Add Expense</button>
+                                            <table id="orgEventTable" style={{ textAlign: "center",marginTop:"15px" }}>
+                                                <thead>
+                                                    <tr>
+                                                        <th>Category</th>
+                                                        <th>Description</th>
+                                                        <th>Date</th>
+                                                        <th>Amount</th>
+                                                        <th>Status</th>
+                                                        <th>Action</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+
+                                                    {event.expenses && event.expenses.length > 0 ? (
+                                                        event.expenses.map(expense => (
+                                                            <tr key={expense._id}>
+                                                                <td>{expense.category}</td>
+                                                                <td>{expense.description}</td>
+                                                                <td>{new Date(expense.date).toLocaleDateString()}</td>
+                                                                <td>₹{expense.amount.toLocaleString()}</td>
+                                                                <td>
+                                                                    <span style={{
+                                                                        padding: "4px 8px",
+                                                                        borderRadius: "4px",
+                                                                        fontSize: "12px",
+                                                                        fontWeight: "bold",
+
+                                                                        backgroundColor: expense.approvalStatus === "approved" ? "#dcfce7" : "#fef3c7",
+                                                                        color: expense.approvalStatus === "approved" ? "#166534" : "#92400e"
+                                                                    }}>
+                                                                        {expense.approvalStatus}
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    <button className="ExpenceAction" onClick={() => setdelCnfmModel(true)} style={{ backgroundColor: "rgb(250, 69, 69)" }} >Delete</button>
+                                                                    <button className="ExpenceAction" style={{ backgroundColor: "rgb(96, 157, 242)" }}
+
+                                                                        onClick={() => addExpense(true)}
+
+                                                                    >Edit</button>
+
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    ) : (
+                                                        <tr><td colSpan="5" style={{ color: "gray" }}>No expenses added yet.</td></tr>
+                                                    )}
+                                                </tbody>
+                                            </table>
                                         </div>
-                                        <table id="orgEventTable" style={{ textAlign: "center" }}>
-                                            <thead>
-                                                <tr>
-                                                    <th>Category</th>
-                                                    <th>Description</th>
-                                                    <th>Date</th>
-                                                    <th>Amount</th>
-                                                    <th>Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-
-                                                {event.expenses && event.expenses.length > 0 ? (
-                                                    event.expenses.map(expense => (
-                                                        <tr key={expense._id}>
-                                                            <td>{expense.category}</td>
-                                                            <td>{expense.description}</td>
-                                                            <td>{new Date(expense.date).toLocaleDateString()}</td>
-                                                            <td>₹{expense.amount.toLocaleString()}</td>
-                                                            <td>
-                                                                <span style={{
-                                                                    padding: "4px 8px",
-                                                                    borderRadius: "4px",
-                                                                    fontSize: "12px",
-                                                                    fontWeight: "bold",
-
-                                                                    backgroundColor: expense.approvalStatus === "approved" ? "#dcfce7" : "#fef3c7",
-                                                                    color: expense.approvalStatus === "approved" ? "#166534" : "#92400e"
-                                                                }}>
-                                                                    {expense.approvalStatus}
-                                                                </span>
-                                                            </td>
-                                                        </tr>
-                                                    ))
-                                                ) : (
-                                                    <tr><td colSpan="5" style={{ color: "gray" }}>No expenses added yet.</td></tr>
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </>}
@@ -301,6 +324,31 @@ export default function OrganizerPanel() {
             </div>
         )}
 
+
+        {delCnfmModel &&
+            <>
+                <div className="delcnfm">
+                    <div className="msgBox">
+                        <h2>Are you sure?</h2>
+                        <p>Do you really want to delete this expense? This process cannot be undone.</p>
+                        <div style={{
+                            display: "flex",
+                            gap: "15px",
+                            justifyContent: "end",
+                            color: "black"
+                        }} >
+                            <button className="ExpenceAction" style={{
+                                backgroundColor: "rgb(250, 69, 69)", color: "white"
+                            }} >Yeah!</button>
+                            <button className="ExpenceAction" style={{
+                                backgroundColor: "rgb(128, 128, 128)", color: "white"
+                            }} onClick={() => setdelCnfmModel(false)}
+                            >No</button>
+                        </div>
+                    </div>
+                </div>
+            </>
+        }
 
 
 

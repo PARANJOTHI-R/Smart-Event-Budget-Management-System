@@ -16,7 +16,7 @@ const eventSchema=new mongoose.Schema({
     budget:{type:Number,required:true,default:0},
     totalSpent:{type:Number,required:true,default:0},
     expenses:[expenseSchema],
-    status:{type:String,enum:['upcoming','ongoing','completed'],default:'upcoming'}
+    status:{type:String,enum:['pending','upcoming','ongoing','completed','rejected'],default:'pending'}
 },{timestamps:true});
 
 eventSchema.pre('save', function() {

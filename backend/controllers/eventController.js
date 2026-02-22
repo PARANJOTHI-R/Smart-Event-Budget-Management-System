@@ -14,9 +14,9 @@ export const createEvent = async (req, res) => {
             user = await userModel.findOne({ name: organizerId });
         }
         if (!user) {
-            return res.status(404).json({ 
-                success: false, 
-                message: `User '${organizerId}' not found. Please register the user first.` 
+            return res.status(404).json({
+                success: false,
+                message: `User '${organizerId}' not found. Please register the user first.`
             });
         }
 
@@ -39,13 +39,21 @@ export const addExpenseToEvent = async (req, res) => {
         const { eventId } = req.params;
         const { category, description, amount, date } = req.body;
         const event = await eventModel.findById(eventId);
-        if(amount>event.budget){
+        if (!event) return res.json({ message: "Event not found" });
+        if (amount > event.budget) {
             return res.json({ success: false, message: 'Expense amount exceeds event budget' });
         }
-        if(amount<=0){
+        if (amount <= 0) {
             return res.status(400).json({ success: false, message: 'Expense amount must be greater than zero' });
         }
-        if (!event) return res.json({ message: "Event not found" });
+        const eventDate = new Date(event.eventDate);
+        const eventDatePlus = new Date(eventDate.getTime() + 48 * 60 * 60 * 1000);
+        const expenseDate = new Date(date);
+
+
+        if (expenseDate > eventDatePlus) {
+            return res.status(400).json({ success: false, message: 'Expense date cannot be after 48 hrs of event date' });
+        }
 
         event.expenses.push({
             title: description,
@@ -65,15 +73,15 @@ export const addExpenseToEvent = async (req, res) => {
 
 export const getAllEvents = async (req, res) => {
     try {
-        const {organizerName}=req.query;
+        const { organizerName } = req.query;
         let filter = {};
 
-        if(organizerName){
-            const user=await userModel.findOne({name:organizerName});
-            if(!user){
+        if (organizerName) {
+            const user = await userModel.findOne({ name: organizerName });
+            if (!user) {
                 return res.status(404).json({ success: false, message: `Organizer '${organizerName}' not found` });
             }
-            filter={organizer:user._id};
+            filter = { organizer: user._id };
         }
 
         const events = await eventModel.find(filter).populate('organizer', 'name');
