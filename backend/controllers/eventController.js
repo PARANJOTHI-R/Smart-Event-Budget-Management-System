@@ -90,3 +90,53 @@ export const getAllEvents = async (req, res) => {
         res.status(500).json({ success: false, message: e.message });
     }
 };
+
+export const deleteExpense = async (req, res) => {
+    try {
+        const { eventId, expenseId } = req.params;
+        const event = await eventModel.findById(eventId);
+        if (!event) {
+            return res.status(404).json({ success: false, message: 'Event not found' });
+        }
+        const expense=event.expenses.id(expenseId); 
+        if (!expense) {
+            return res.status(404).json({ success: false, message: 'Expense not found' });
+        }
+        if(expense.approvalStatus==='approved'){
+            return res.status(400).json({ success: false, message: 'Approved expenses cannot be deleted. Please contact Admin' });
+        }
+        event.expenses.pull(expenseId);
+        await event.save();
+        res.status(200).json({ success: true, message: 'Expense deleted successfully', event });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const updateExpense = async (req, res) => {
+    try {
+        const { eventId, expenseId } = req.params;
+        const { category, description, amount, date } = req.body;
+
+        const event = await eventModel.findById(eventId);
+        if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
+
+        const expense = event.expenses.id(expenseId);
+        if (!expense) return res.status(404).json({ success: false, message: 'Expense not found' });
+
+        if (expense.approvalStatus === 'approved') {
+            return res.status(400).json({ success: false, message: 'Approved expenses cannot be edited.' });
+        }
+
+        expense.category = category;
+        expense.description = description;
+        expense.amount = amount;
+        expense.date = date;
+
+        await event.save();
+        res.status(200).json({ success: true, message: 'Expense updated successfully', event });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

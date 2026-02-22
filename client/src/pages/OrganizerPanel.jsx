@@ -14,7 +14,11 @@ export default function OrganizerPanel() {
     const [formData, setFormData] = useState({ name: "", date: "", budget: "", organizer: "" });
     const [expenseFormData, setExpenseFormData] = useState({ category: "Venue", description: "", amount: "", date: "" });
 
+
     const [delCnfmModel, setdelCnfmModel] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [currentExpenseId, setCurrentExpenseId] = useState(null);
+    const [currentEventId, setCurrentEventId] = useState(null);
 
     const { isSidebarOpen, userData } = useContext(AppContext);
 
@@ -78,7 +82,7 @@ export default function OrganizerPanel() {
     const NavtoEvent = () => {
         setPageToggle("my-events");
     }
-    const handleAddExpense = async (e) => {
+    const handleAddExpenseSubmit = async (e) => {
         e.preventDefault();
         try {
             const payload = {
@@ -87,13 +91,18 @@ export default function OrganizerPanel() {
                 amount: parseFloat(expenseFormData.amount),
                 date: expenseFormData.date
             };
+            const url = isEditing
+                ? `${API_BASE_URL}/${selectedEventId}/expenses/${currentExpenseId}`
+                : `${API_BASE_URL}/${selectedEventId}/add-expense`;
+            const response = isEditing
+                ? await axios.put(url, payload)
+                : await axios.post(url, payload);
 
-            const response = await axios.post(`${API_BASE_URL}/${selectedEventId}/add-expense`, payload);
             if (response.data.success) {
                 fetchEvents();
                 setaddExpense(false);
                 setExpenseFormData({ category: "Venue", description: "", amount: "", date: "" });
-                toast.success("Expense added successfully!", { position: "top-center" });
+                toast.success(isEditing ? "Expense updated!" : "Expense added!", { position: "top-center" });
             } else {
                 toast.error(response.data.message, { position: "top-center" });
             }
@@ -122,6 +131,32 @@ export default function OrganizerPanel() {
             </div>
         </>
     }
+
+    const handleDeleteExpense= async (eventId, expenseId) => {
+        try {
+            const response = await axios.delete(`${API_BASE_URL}/${eventId}/expenses/${expenseId}`);
+            if (response?.data?.success) {
+                fetchEvents();
+                setdelCnfmModel(false);
+                toast.success("Expense deleted successfully!", { position: "top-center" });
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || error.message, { position: "top-center" });
+        }
+    }
+
+    const openEditModal = (event, expense) => {
+        setSelectedEventId(event._id);
+        setCurrentExpenseId(expense._id);
+        setExpenseFormData({
+            category: expense.category,
+            description: expense.description,
+            amount: expense.amount,
+            date: new Date(expense.date).toISOString().split('T')[0]
+        });
+        setIsEditing(true);
+        setaddExpense(true);
+    };
 
     return <>
         <Nav />
@@ -227,12 +262,12 @@ export default function OrganizerPanel() {
                                         <div key={event._id} className="eventExpenseCard">
                                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                                 <div>
-                                                    <h2>{event.eventName}</h2><br/>
+                                                    <h2>{event.eventName}</h2><br />
                                                     <p>Budget: ₹{event.budget} || <strong>Organizer:</strong> {userData?.name || event.organizer}</p>
                                                 </div>
                                                 <button className="addExpBut" onClick={() => openExpenseModal(event._id)}>+Add Expense</button>
                                             </div>
-                                            <table id="orgEventTable" style={{ textAlign: "center",marginTop:"15px" }}>
+                                            <table id="orgEventTable" style={{ textAlign: "center", marginTop: "15px" }}>
                                                 <thead>
                                                     <tr>
                                                         <th>Category</th>
@@ -266,10 +301,24 @@ export default function OrganizerPanel() {
                                                                     </span>
                                                                 </td>
                                                                 <td>
-                                                                    <button className="ExpenceAction" onClick={() => setdelCnfmModel(true)} style={{ backgroundColor: "rgb(250, 69, 69)" }} >Delete</button>
-                                                                    <button className="ExpenceAction" style={{ backgroundColor: "rgb(96, 157, 242)" }}
+                                                                    <button className="ExpenceAction"
+                                                                        disabled={expense.approvalStatus === "approved"}
+                                                                        onClick={() => {
+                                                                            setCurrentEventId(event._id);
+                                                                            setCurrentExpenseId(expense._id);
+                                                                            setdelCnfmModel(true);
+                                                                        }
+                                                                        } style={{
+                                                                            backgroundColor: "rgb(250, 69, 69)"
 
-                                                                        onClick={() => addExpense(true)}
+                                                                        }}
+
+                                                                    >Delete</button>
+                                                                    <button className="ExpenceAction"
+                                                                        disabled={expense.approvalStatus === "approved"}
+                                                                        style={{ backgroundColor: "rgb(96, 157, 242)" }}
+
+                                                                        onClick={() => openEditModal(event, expense)}
 
                                                                     >Edit</button>
 
@@ -339,7 +388,9 @@ export default function OrganizerPanel() {
                         }} >
                             <button className="ExpenceAction" style={{
                                 backgroundColor: "rgb(250, 69, 69)", color: "white"
-                            }} >Yeah!</button>
+                            }}
+                                onClick={() => handleDeleteExpense(currentEventId, currentExpenseId)}
+                            >Yeah!</button>
                             <button className="ExpenceAction" style={{
                                 backgroundColor: "rgb(128, 128, 128)", color: "white"
                             }} onClick={() => setdelCnfmModel(false)}
@@ -361,7 +412,7 @@ export default function OrganizerPanel() {
                             <h2>Add Expense</h2>
                             <button className="closeModal" onClick={() => setaddExpense(false)}>&times;</button>
                         </div>
-                        <form className="modalForm" onSubmit={handleAddExpense} >
+                        <form className="modalForm" onSubmit={handleAddExpenseSubmit} >
                             <label>Event Category</label>
                             <select
                                 value={expenseFormData.category}
