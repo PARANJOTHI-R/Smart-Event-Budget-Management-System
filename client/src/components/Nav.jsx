@@ -1,38 +1,50 @@
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { AppContext } from "../context/AppContext.jsx";
-import { useState } from "react";
-import { useContext } from "react";
-export default function Nav() {
-    const { userData, isLoggedIn, logout } = React.useContext(AppContext);
-    const navigate = useNavigate();
-    const handlelogout = () => {
-        logout();
-        navigate('/');
-    }
-    const {isSidebarOpen, setIsSidebarOpen} = useContext(AppContext);
-    return <>
-        <div className="navContainer">
-            <h1>Planova</h1>
-            <div className="nav-links">
-                <ul><li><Link to='/' style={{ padding: "10px" }} >Home</Link></li></ul>
-                {isLoggedIn && userData ? (
-                    <span className="roleName" style={{ fontWeight: 'bold', fontSize: '18px' }}>
-                        {userData.role === 'admin' ? 'Admin Login' : 'Organizer Login'}
-                    </span>
-                ) : (<ul><li><Link to='/login' >Login</Link></li></ul>)}
-                {isLoggedIn && <ul><li><button className="logoutButton" onClick={handlelogout}>Logout</button></li>
-                </ul>}
-                {isLoggedIn && <img src="./src/assets/notification.png" alt="Notify"
-                    style={{
-                        width: "30px",
-                        height: "30px",
-                        cursor: "pointer",
-                    }}
-                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                />}
-            </div>
+import { useContext } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { AppContext } from '../context/AppContext.jsx';
+import { Bell, LogOut, Zap } from 'lucide-react';
 
-        </div>
-    </>
+export default function Nav() {
+    const { isLoggedIn, logout, userData, isSidebarOpen, setIsSidebarOpen } = useContext(AppContext);
+    const navigate = useNavigate();
+
+    const handleLogout = async () => {
+        await logout();
+        navigate('/');
+    };
+
+    return (
+        <nav className="navContainer">
+            <Link to="/" className="nav-brand">
+                <div className="nav-brand-icon">
+                    <Zap size={18} strokeWidth={2.5} />
+                </div>
+                Eventify
+            </Link>
+
+            <div className="nav-right">
+                {isLoggedIn ? (
+                    <>
+                        <span className="roleName">{userData?.role}</span>
+                        {userData?.role === 'organizer' && (
+                            <button
+                                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                                className="nav-icon-btn"
+                                title="Notifications"
+                            >
+                                <Bell size={20} />
+                            </button>
+                        )}
+                        <button className="logoutButton" onClick={handleLogout}>
+                            <LogOut size={14} /> Logout
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <Link to="/login" className="nav-btn-ghost">Login</Link>
+                        <Link to="/register" className="nav-btn-primary">Register</Link>
+                    </>
+                )}
+            </div>
+        </nav>
+    );
 }

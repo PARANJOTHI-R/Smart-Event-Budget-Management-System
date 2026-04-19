@@ -1,6 +1,6 @@
-import { useContext, useState } from 'react'
+import { useContext } from 'react'
 import './App.css'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom'
 import Home from './pages/Home.jsx'
 import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
@@ -11,35 +11,42 @@ import { AppContextProvider } from './context/AppContext.jsx'
 import AdminPanel from './pages/AdminPanel.jsx'
 import OrganizerPanel from './pages/OrganizerPanel.jsx'
 import { AppContext } from './context/AppContext.jsx'
-import { useNavigate } from 'react-router-dom'
 
+function ProtectedRoute({ children, requiredRole }) {
+    const { isLoggedIn, userData } = useContext(AppContext);
+    if (!isLoggedIn) return <Navigate to="/login" replace />;
+    if (requiredRole && userData?.role !== requiredRole) return <Navigate to="/" replace />;
+    return children;
+}
 
 function AppContent() {
-  const { isLoggedIn } = useContext(AppContext);
-  return <>
-
-    <Routes>
-      <Route path='/' element={<Home />} />
-      <Route path='/login' element={<Login />} />
-      <Route path='/register' element={<Register />} />
-      <Route path='/reset-password' element={<ForgetPassword />} />
-      {isLoggedIn && <Route path='/admin-panel' element={<AdminPanel />} />}
-      {isLoggedIn && <Route path='/organizer-panel' element={<OrganizerPanel />} />}
-    </Routes>
-  </>
+    return (
+        <Routes>
+            <Route path='/' element={<Home />} />
+            <Route path='/login' element={<Login />} />
+            <Route path='/register' element={<Register />} />
+            <Route path='/reset-password' element={<ForgetPassword />} />
+            <Route path='/admin-panel' element={
+                <ProtectedRoute requiredRole="admin"><AdminPanel /></ProtectedRoute>
+            } />
+            <Route path='/organizer-panel' element={
+                <ProtectedRoute requiredRole="organizer"><OrganizerPanel /></ProtectedRoute>
+            } />
+        </Routes>
+    );
 }
 
 function App() {
-  return (
-    <>
-      <ToastContainer />
-      <BrowserRouter>
-        <AppContextProvider>
-          <AppContent />
-        </AppContextProvider>
-      </BrowserRouter>
-    </>
-  )
+    return (
+        <>
+            <ToastContainer position="top-center" autoClose={3000} />
+            <BrowserRouter>
+                <AppContextProvider>
+                    <AppContent />
+                </AppContextProvider>
+            </BrowserRouter>
+        </>
+    );
 }
 
 export default App
