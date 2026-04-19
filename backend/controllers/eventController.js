@@ -74,7 +74,7 @@ export const addExpenseToEvent = async (req, res) => {
 
 export const getAllEvents = async (req, res) => {
     try {
-        const { organizerName } = req.query;
+        const { organizerName } = req?.query;
         let filter = {};
 
         if (organizerName) {
@@ -84,7 +84,6 @@ export const getAllEvents = async (req, res) => {
             }
             filter = { organizer: user._id };
         }
-
         const events = await eventModel.find(filter).populate('organizer', 'name');
         res.status(200).json({ success: true, events });
     } catch (e) {

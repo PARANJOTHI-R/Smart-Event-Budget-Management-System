@@ -1,6 +1,12 @@
 import Nav from "../components/Nav.jsx";
-import { useState } from "react";
+import { use, useState } from "react";
+import { useContext } from "react";
+import { AppContext } from "../context/AppContext.jsx";
+import { toast } from "react-toastify";
+import axios from "axios";
+import { useEffect } from "react";
 export default function AdminPanel() {
+    const BACKEND_URL = "http://localhost:4000/api/events";
     const [pageToogle, setPageToggle] = useState("overview");
 
     const [requests, setRequests] = useState([
@@ -8,13 +14,34 @@ export default function AdminPanel() {
         { id: 202, organizer: "Siva", event: "Hacknovate 2k26", amount: 2000, description: "Equipment Rental", category: "snacks", status: "Approved" },
 
     ]);
-
+    const { userData } = useContext(AppContext);
+    const [events, setEvents] = useState([]);
     const [reports, setReports] = useState([
         { id: 301, event: "Enthusia 2k26", organizer: "paranjothi", budget: 12000, approved: 3000, remaining: 9000 },
         { id: 302, event: "Swaram 2k26", organizer: "siva", budget: 12000, approved: 3000, remaining: 9000 },
         { id: 303, event: "Hacknovate 2k26", organizer: "nithish", budget: 12000, approved: 3000, remaining: 9000 },
 
     ]);
+
+    const fetchEvents = async () => {
+        try {
+            if (userData?.role !== "admin") {
+                toast.error("Unauthorized Access", { position: "top-center" }),
+                    setTimeout(() => {
+                        window.location.href = "/login"
+                    }, 2000);
+                return;
+            }
+            const response = await axios.get(`${BACKEND_URL}/all`);
+            setEvents(response.data.events);
+        } catch (err) {
+            console.log(err);
+        }
+    }
+    useEffect(() => {
+        if (!userData) return;
+        fetchEvents();
+    }, [userData]);
     return <>
         <Nav />
         <div className="organizerContainer">
@@ -105,11 +132,11 @@ export default function AdminPanel() {
                         pageToogle === "reports" &&
                         <>
                             <div className="myEventsPage">
-                                <div style={{display:"flex",justifyContent:"space-between",alignContent:"center"}} >
+                                <div style={{ display: "flex", justifyContent: "space-between", alignContent: "center" }} >
                                     <h1>Financial Reports</h1>
-                                    <button 
-                                        style={{padding:"5px 10px",borderRadius:"5px",fontSize:"14px",cursor:"pointer"}}
-                                        onClick={()=>window.print()}
+                                    <button
+                                        style={{ padding: "5px 10px", borderRadius: "5px", fontSize: "14px", cursor: "pointer" }}
+                                        onClick={() => window.print()}
                                     >Print report </button>
                                 </div>
                                 <div style={{ margin: "20px 0px" }} className="eventExpenseCard">
