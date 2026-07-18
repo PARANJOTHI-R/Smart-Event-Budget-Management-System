@@ -14,7 +14,7 @@ connectDb();
 
 const allowedOrigins = [
     'http://localhost:5173',
-    'eventifybudgetmanager.vercel.app'  
+    'https://eventifybudgetmanager.vercel.app'  
 ];
 
 app.use(express.json());
