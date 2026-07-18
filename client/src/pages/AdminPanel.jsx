@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 import axios from "axios";
 import { useEffect } from "react";
 export default function AdminPanel() {
-    const BACKEND_URL = "http://localhost:4000/api/events";
+    const BACKEND_URL = "https://smart-event-budget-management-system.onrender.com/api/events";
     const [pageToogle, setPageToggle] = useState("overview");
 
     const [requests, setRequests] = useState([

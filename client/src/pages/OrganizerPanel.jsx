@@ -6,7 +6,7 @@ import NotificationBar from "../components/NotificationBar";
 import { AppContext } from "../context/AppContext.jsx";
 import { useContext } from "react";
 export default function OrganizerPanel() {
-    const API_BASE_URL = "http://localhost:4000/api/events";
+    const API_BASE_URL = "https://smart-event-budget-management-system.onrender.com/api/events";
     const [pageToogle, setPageToggle] = useState("dashboard");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [addExpense, setaddExpense] = useState(false);
@@ -14,13 +14,14 @@ export default function OrganizerPanel() {
     const [formData, setFormData] = useState({ name: "", date: "", budget: "", organizer: "" });
     const [expenseFormData, setExpenseFormData] = useState({ category: "Venue", description: "", amount: "", date: "" });
 
+    
 
     const [delCnfmModel, setdelCnfmModel] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [currentExpenseId, setCurrentExpenseId] = useState(null);
     const [currentEventId, setCurrentEventId] = useState(null);
 
-    const { isSidebarOpen, userData } = useContext(AppContext);
+    const { isSidebarOpen, userData, authChecked } = useContext(AppContext);
 
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -51,8 +52,11 @@ export default function OrganizerPanel() {
     useEffect(() => {
         if (userData?.name) {
             fetchEvents();
-        }
-    }, [userData]);
+        }else if (authChecked) {
+        // auth check finished and there's still no user — stop spinning
+        setLoading(false);
+    }
+    }, [userData,authChecked]);
 
     const pendingAmount = events.reduce((sum, event) => {
         const eventPending = event.expenses
