@@ -132,7 +132,7 @@ export default function OrganizerPanel() {
     if (loading) {
         return <>
             <div className="loading" >
-                <img src="./src/assets/loading.png" />
+                <img src="/loading.png" />
                 <p>Loading Dashboard...</p>
             </div>
         </>

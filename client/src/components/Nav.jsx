@@ -23,7 +23,7 @@ export default function Nav() {
                 ) : (<ul><li><Link to='/login' >Login</Link></li></ul>)}
                 {isLoggedIn && <ul><li><button className="logoutButton" onClick={handlelogout}>Logout</button></li>
                 </ul>}
-                {isLoggedIn && <img src="./src/assets/notification.png" alt="Notify"
+                {isLoggedIn && <img src="/notification.png" alt="Notify"
                     style={{
                         width: "30px",
                         height: "30px",

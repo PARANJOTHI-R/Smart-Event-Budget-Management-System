@@ -14,7 +14,7 @@ export default function AdminPanel() {
         { id: 202, organizer: "Siva", event: "Hacknovate 2k26", amount: 2000, description: "Equipment Rental", category: "snacks", status: "Approved" },
 
     ]);
-    const { userData } = useContext(AppContext);
+    const { userData,authChecked} = useContext(AppContext);
     const [events, setEvents] = useState([]);
     const [reports, setReports] = useState([
         { id: 301, event: "Enthusia 2k26", organizer: "paranjothi", budget: 12000, approved: 3000, remaining: 9000 },
@@ -23,6 +23,7 @@ export default function AdminPanel() {
 
     ]);
 
+    const [loading, setLoading] = useState(true);
     const fetchEvents = async () => {
         try {
             if (userData?.role !== "admin") {
@@ -34,14 +35,28 @@ export default function AdminPanel() {
             }
             const response = await axios.get(`${BACKEND_URL}/all`);
             setEvents(response.data.events);
+            setLoading(false);
         } catch (err) {
             console.log(err);
+            setLoading(false);
         }
     }
     useEffect(() => {
-        if (!userData) return;
-        fetchEvents();
-    }, [userData]);
+        if (userData?.name) {
+            fetchEvents();
+        }else if (authChecked) {
+        // auth check finished and there's still no user — stop spinning
+        setLoading(false);
+    }
+    }, [userData,authChecked]);
+    if (loading) {
+        return <>
+            <div className="loading" >
+                <img src="/loading.png" />
+                <p>Loading Dashboard...</p>
+            </div>
+        </>
+    }
     return <>
         <Nav />
         <div className="organizerContainer">
